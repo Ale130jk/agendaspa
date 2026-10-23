@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: agendaspa_test
+          POSTGRES_USER: agendaspa
+          POSTGRES_PASSWORD: agendaspa_dev_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U agendaspa -d agendaspa_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://agendaspa:agendaspa_dev_password@localhost:5432/agendaspa_test?schema=public
+      TEST_DATABASE_URL: postgresql://agendaspa:agendaspa_dev_password@localhost:5432/agendaspa_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      TEST_REDIS_URL: redis://localhost:6379/1
+      JWT_ACCESS_SECRET: ci-only-access-secret-change-me-32
+      FRONTEND_URL: http://localhost:5173
+      COOKIE_SECURE: 'false'
+      SPA_TIMEZONE: America/Lima
+      CURRENCY: PEN
+      SEED_DEMO: 'false'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Backend unit tests
+        run: npm run test:unit -w backend
+
+      - name: Frontend tests
+        run: npm run test -w frontend
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate OpenAPI
+        run: npm run docs:openapi
+
+      - name: Verify generated OpenAPI is committed
+        run: git diff --exit-code -- docs/openapi.json
+
+      - name: Apply test database migrations
+        run: npm run db:migrate:deploy -w backend
+
+      - name: Backend integration tests
+        run: npm run test:integration -w backend

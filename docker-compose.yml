@@ -1,0 +1,96 @@
+name: agendaspa
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agendaspa}
+      POSTGRES_USER: ${POSTGRES_USER:-agendaspa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agendaspa_dev_password}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-agendaspa}:${POSTGRES_PASSWORD:-agendaspa_dev_password}@db:5432/${POSTGRES_DB:-agendaspa}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env (copy .env.example)}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      COOKIE_SECURE: 'false'
+      SPA_TIMEZONE: ${SPA_TIMEZONE:-America/Lima}
+      CURRENCY: ${CURRENCY:-PEN}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@agendaspa.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
+      SEED_STAFF_EMAIL: ${SEED_STAFF_EMAIL:-lucia@agendaspa.local}
+      SEED_STAFF_PASSWORD: ${SEED_STAFF_PASSWORD:-Staff123!}
+      SEED_CLIENT_EMAIL: ${SEED_CLIENT_EMAIL:-cliente@agendaspa.local}
+      SEED_CLIENT_PASSWORD: ${SEED_CLIENT_PASSWORD:-Client123!}
+      RATE_LIMIT_WINDOW_MINUTES: ${RATE_LIMIT_WINDOW_MINUTES:-15}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}
+      BOOKING_RATE_LIMIT_MAX: ${BOOKING_RATE_LIMIT_MAX:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '${BACKEND_PORT:-3000}:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    stop_grace_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - '${FRONTEND_PORT:-8080}:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
