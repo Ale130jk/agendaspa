@@ -51,6 +51,15 @@ export default {
         soft: '0 18px 50px -28px rgba(36, 35, 31, 0.35)',
         lift: '0 24px 70px -32px rgba(36, 35, 31, 0.45)',
       },
+      animation: {
+        'fade-up': 'fade-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both',
+      },
+      keyframes: {
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(14px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
       borderRadius: {
         '4xl': '2rem',
       },

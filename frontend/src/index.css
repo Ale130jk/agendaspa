@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-sage-200 text-sage-900;
+  }
+
+  :focus-visible {
+    outline: none;
+  }
+
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    min-height: 2.75rem;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  .nav-link {
+    @apply rounded-full px-3 py-2 text-sm font-semibold text-ink/60 transition hover:bg-sand-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-500;
+  }
+
+  .mobile-nav-link {
+    @apply rounded-2xl px-3 py-3 text-sm font-semibold text-ink/70 transition hover:bg-sand-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-500;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
