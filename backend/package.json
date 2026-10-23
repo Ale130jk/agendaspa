@@ -23,7 +23,6 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "7.3.4",
     "@prisma/client": "6.19.3",
     "argon2": "0.45.1",
     "cookie-parser": "1.4.7",
@@ -37,6 +36,7 @@
     "jsonwebtoken": "9.0.3",
     "pino": "10.4.0",
     "pino-http": "11.0.0",
+    "redis": "4.7.1",
     "swagger-ui-express": "5.0.1",
     "zod": "3.25.76"
   },
