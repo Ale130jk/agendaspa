@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  phone         String?
+  role          Role           @default(CLIENT)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  staffProfile  StaffProfile?
+  bookings      Booking[]      @relation("ClientBookings")
+  refreshTokens RefreshToken[]
+
+  @@index([role])
+}
+
+model Service {
+  id              String         @id @default(uuid()) @db.Uuid
+  name            String         @unique
+  description     String?
+  durationMinutes Int
+  priceCents      Int
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(3)
+  staffServices   StaffService[]
+  bookings        Booking[]
+
+  @@index([isActive])
+}
+
+model StaffProfile {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @unique @db.Uuid
+  bio           String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staffServices StaffService[]
+  workingHours  WorkingHours[]
+  timeOff       TimeOff[]
+  bookings      Booking[]
+
+  @@index([isActive])
+}
+
+model StaffService {
+  staffId   String       @db.Uuid
+  serviceId String       @db.Uuid
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service   Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, serviceId])
+  @@index([serviceId])
+}
+
+model WorkingHours {
+  id          String       @id @default(uuid()) @db.Uuid
+  staffId     String       @db.Uuid
+  weekday     Int
+  startMinute Int
+  endMinute   Int
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, weekday, startMinute])
+  @@index([staffId, weekday])
+}
+
+model TimeOff {
+  id        String       @id @default(uuid()) @db.Uuid
+  staffId   String       @db.Uuid
+  startAt   DateTime     @db.Timestamptz(3)
+  endAt     DateTime     @db.Timestamptz(3)
+  reason    String?
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  staff     StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, startAt])
+}
+
+model Booking {
+  id             String        @id @default(uuid()) @db.Uuid
+  clientId       String        @db.Uuid
+  staffId        String        @db.Uuid
+  serviceId      String        @db.Uuid
+  status         BookingStatus @default(PENDING)
+  startAt        DateTime      @db.Timestamptz(3)
+  endAt          DateTime      @db.Timestamptz(3)
+  expiresAt      DateTime      @db.Timestamptz(3)
+  idempotencyKey String
+  requestHash    String
+  confirmedAt    DateTime?     @db.Timestamptz(3)
+  cancelledAt    DateTime?     @db.Timestamptz(3)
+  completedAt    DateTime?     @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  client         User          @relation("ClientBookings", fields: [clientId], references: [id])
+  staff          StaffProfile  @relation(fields: [staffId], references: [id])
+  service        Service       @relation(fields: [serviceId], references: [id])
+
+  @@unique([clientId, idempotencyKey])
+  @@index([staffId, startAt])
+  @@index([clientId, startAt])
+  @@index([status, expiresAt])
+  @@index([serviceId])
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  tokenHash         String    @unique
+  familyId          String    @db.Uuid
+  expiresAt         DateTime  @db.Timestamptz(3)
+  revokedAt         DateTime? @db.Timestamptz(3)
+  replacedByTokenId String?   @db.Uuid
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+}
