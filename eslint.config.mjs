@@ -58,4 +58,10 @@ export default tseslint.config(
       globals: { ...globals.node },
     },
   },
+  {
+    files: ['loadtest/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node, __ENV: 'readonly' },
+    },
+  },
 );
