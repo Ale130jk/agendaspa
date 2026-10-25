@@ -1,8 +1,9 @@
-import type {
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import { cn } from '../lib/cn';
 
@@ -34,31 +35,47 @@ export function Field({ label, htmlFor, error, hint, children }: FieldProps) {
   );
 }
 
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(controlClasses, className)} {...props} />;
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, ...props }, ref) {
+    return <input ref={ref} className={cn(controlClasses, className)} {...props} />;
+  },
+);
 
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(controlClasses, 'min-h-24 resize-y', className)} {...props} />;
-}
-
-export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+export const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function Textarea({ className, ...props }, ref) {
   return (
-    <select className={cn(controlClasses, 'appearance-none pr-10', className)} {...props}>
-      {children}
-    </select>
+    <textarea ref={ref} className={cn(controlClasses, 'min-h-24 resize-y', className)} {...props} />
   );
-}
+});
 
-export function Checkbox({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      type="checkbox"
-      className={cn(
-        'h-4 w-4 rounded border-sand-400 text-sage-700 accent-sage-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 focus-visible:ring-offset-2',
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
+  function Select({ className, children, ...props }, ref) {
+    return (
+      <select
+        ref={ref}
+        className={cn(controlClasses, 'appearance-none pr-10', className)}
+        {...props}
+      >
+        {children}
+      </select>
+    );
+  },
+);
+
+export const Checkbox = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Checkbox({ className, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        type="checkbox"
+        className={cn(
+          'h-4 w-4 rounded border-sand-400 text-sage-700 accent-sage-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 focus-visible:ring-offset-2',
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
