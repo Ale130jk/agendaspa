@@ -34,6 +34,8 @@ No se declara el proyecto como listo para producción: quedan riesgos de auditor
 | Proxy y estáticos           | `GET /`, `/reservar`, `/login`, `/docs/`, `/health`, `/ready` | PASS: 200; `/ready` reporta `database: ok` y `redis: ok`.                                    |
 | Flujo demo por API          | login, disponibilidad, crear, replay, confirmar y cancelar    | PASS: `201 PENDING`, replay `200` con el mismo id, `CONFIRMED`, `CANCELLED`.                 |
 | Integración en Docker       | suite dentro del contenedor backend                           | PASS: 20/20 pruebas contra PostgreSQL 16 y Redis 7.                                          |
+| CI en GitHub                | `gh run watch` sobre `ci.yml`                                 | PASS: lint, typecheck, unitarias, frontend, build, OpenAPI, migraciones e integración.       |
+| Publicación GHCR            | `gh run watch` sobre `publish.yml`                            | PASS: imágenes de backend y frontend publicadas.                                             |
 | k6                          | `k6 run loadtest/availability.js`                             | PASS: 759 peticiones, 0 % de errores, p95 8.17 ms.                                           |
 
 El smoke HTTP del build usó el backend compilado sin base de datos. El resto de la evidencia se ejecutó contra el stack real de Compose.
@@ -104,7 +106,12 @@ El script usa `K6_MAX_VUS`, no `K6_VUS`, porque k6 interpreta `K6_VUS` como una 
 
 ## CI en GitHub
 
-Los workflows existen, pero no se ejecutaron en GitHub porque los cambios posteriores a `0371f58` todavía no se habían publicado al momento de esta revisión. El primer push a `main` debe ejecutar `ci.yml` y `publish.yml`.
+La primera ejecución se completó sobre `main`:
+
+- `ci.yml`: PASS en 1m20s. Ejecutó lint, typecheck, pruebas unitarias, pruebas de frontend, build, verificación del OpenAPI, migraciones de test e integración contra PostgreSQL 16 y Redis 7.
+- `publish.yml`: PASS. Construyó y publicó `ghcr.io/ale130jk/agendaspa-backend` y `ghcr.io/ale130jk/agendaspa-frontend`.
+
+Solo queda la advertencia de GitHub sobre acciones que todavía apuntan a Node 20 (`actions/checkout@v4`, `actions/setup-node@v4`); el runner las ejecuta con Node 24. No afecta la entrega.
 
 ## Cobertura funcional
 
